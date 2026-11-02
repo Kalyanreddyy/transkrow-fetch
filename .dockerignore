@@ -1,0 +1,13 @@
+# Build context
+node_modules
+.next
+.git
+.data
+data
+coverage
+npm-debug.log*
+.env
+.env.*
+!.env.example
+*.md
+!THIRD_PARTY_NOTICES.md
