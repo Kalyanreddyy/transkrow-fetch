@@ -44,6 +44,13 @@ https://github.com/yt-dlp/yt-dlp — Unlicense (public domain dedication).
 The Docker image installs the official `yt-dlp_linux` binary, pinned by
 version and SHA-256.
 
+## bgutil PO token provider
+
+https://github.com/Brainicism/bgutil-ytdlp-pot-provider — GPL-3.0-only.
+
+The image runs the pinned 2.0.2 Node server and loads the matching yt-dlp
+plugin zip. It is a separate process, not part of the Next.js application.
+
 ## FFmpeg
 
 https://ffmpeg.org/ — built from the Debian `ffmpeg` package. FFmpeg is

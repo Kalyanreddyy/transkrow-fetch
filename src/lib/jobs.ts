@@ -373,6 +373,7 @@ async function finishJob(jobId: string): Promise<void> {
       proxyUrl: config.proxyUrl,
       cacheDir: path.join(config.dataDir, "yt-dlp-cache"),
       remoteEjs: true,
+      pluginDir: config.pluginDir,
     });
     const result = await runProcess(
       config.ytDlpPath,

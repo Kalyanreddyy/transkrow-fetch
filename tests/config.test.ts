@@ -26,10 +26,14 @@ test("parses size suffixes and proxy URLs", () => {
     DELETE_AFTER_MINUTES: "20",
     YTDLP_PROXY: "socks5://proxy.example:1080",
     DATA_DIR: "/tmp/transkrow-test-data",
+    YTDLP_PLUGIN_DIR: "/opt/yt-dlp-plugins",
+    POT_PROVIDER_URL: "http://127.0.0.1:4416",
   });
   assert.equal(config.maxFileBytes, 20 * 1024 * 1024);
   assert.equal(config.deleteAfterMinutes, 20);
   assert.equal(config.proxyUrl, "socks5://proxy.example:1080");
+  assert.equal(config.pluginDir, "/opt/yt-dlp-plugins");
+  assert.equal(config.potProviderUrl, "http://127.0.0.1:4416");
 });
 
 test("production defaults stay inside a 512 MB free host", () => {
@@ -40,6 +44,8 @@ test("production defaults stay inside a 512 MB free host", () => {
   assert.equal(config.maxDurationSeconds, 90 * 60);
   assert.equal(config.maxDiskBytes, 400 * 1024 * 1024);
   assert.equal(config.maxConcurrent, 1);
+  assert.equal(config.pluginDir, null);
+  assert.equal(config.potProviderUrl, null);
 });
 test("rejects a proxy that is not http or socks", () => {
   assert.throws(() => loadConfig({ ...base, YTDLP_PROXY: "file:///tmp/x" }), /YTDLP_PROXY/);

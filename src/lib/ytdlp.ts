@@ -30,6 +30,8 @@ export type YtDlpArgInput = {
   cacheDir?: string | null;
   /** When true, allow downloading EJS solver scripts from GitHub (pip installs). */
   remoteEjs?: boolean;
+  /** Directory of yt-dlp plugin zips. The PyInstaller binary loads these; pip plugins do not. */
+  pluginDir?: string | null;
 };
 
 /**
@@ -77,6 +79,13 @@ export function buildYtDlpArgs(input: YtDlpArgInput): string[] {
   if (input.remoteEjs !== false) {
     args.push("--remote-components", "ejs:github");
   }
+  if (input.pluginDir) {
+    args.push("--plugin-dirs", input.pluginDir);
+  }
+  // Default clients are tried first. mweb is the fallback that asks for a PO
+  // token. fetch_pot=always is required: with the default "auto" policy those
+  // clients hit LOGIN_REQUIRED before they ever call the provider.
+  args.push("--extractor-args", "youtube:player_client=default,mweb;fetch_pot=always");
 
   const ffmpegLocation = ffmpegLocationArg(input.ffmpegPath);
   if (ffmpegLocation) {

@@ -23,12 +23,17 @@ test("passes the URL as one argument and never through a shell", () => {
     cookiesPath: "/data/cookies.txt",
     proxyUrl: "http://proxy.example:8080",
     cacheDir: "/data/yt-dlp-cache",
+    pluginDir: "/opt/yt-dlp-plugins",
   });
   assert.equal(args.includes("--cache-dir"), true);
   assert.equal(args.includes("/data/yt-dlp-cache"), true);
   assert.equal(args.includes("--remote-components"), true);
   assert.equal(args.includes("ejs:github"), true);
   assert.equal(args.includes("--no-warnings"), false);
+  assert.equal(args.includes("--plugin-dirs"), true);
+  assert.equal(args.includes("/opt/yt-dlp-plugins"), true);
+  assert.equal(args.includes("youtube:player_client=default,mweb;fetch_pot=always"), true);
+  assert.equal(args.includes("--cookies"), true);
   assert.equal(args.at(-1), hostile);
   assert.equal(args.at(-2), "--");
   assert.equal(args.includes("!is_live & duration <=? 180"), true);
@@ -60,6 +65,9 @@ test("caps playlists and selects mp4 for video", () => {
   assert.equal(args.includes("--merge-output-format"), true);
   assert.equal(args.includes("mp4"), true);
   assert.equal(args.includes("--ffmpeg-location"), false);
+  assert.equal(args.includes("--plugin-dirs"), false);
+  assert.equal(args.includes("--cookies"), false);
+  assert.equal(args.includes("youtube:player_client=default,mweb;fetch_pot=always"), true);
 });
 
 test("explains common yt-dlp failures without leaking paths", () => {

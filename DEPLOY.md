@@ -53,7 +53,7 @@ If you would rather not use the Blueprint button: **New → Web Service**, choos
 | `LOGIN_RATE_LIMIT` | `8` | Optional. Wrong-password attempts. |
 | `LOGIN_WINDOW_MINUTES` | `15` | Optional. Window for those attempts. |
 | `SESSION_TTL_HOURS` | `168` | Optional. How long the sign-in cookie lasts. |
-| `COOKIES_CONTENT` | Optional | Netscape `cookies.txt` text, if YouTube blocks the host. See below. |
+| `COOKIES_CONTENT` | Optional | Netscape `cookies.txt` text. Not required. See below. |
 | `YTDLP_PROXY` | Optional | `http://…`, `https://…`, or `socks5://…` proxy. See below. |
 
 Mark `AUTH_PASSWORD`, `AUTH_SECRET`, `COOKIES_CONTENT`, and `YTDLP_PROXY` as secret. Do not commit them.
@@ -75,7 +75,11 @@ If the desk is empty after the site has been asleep, that is expected. Start the
 
 ## 4. When YouTube says the server is a bot
 
-Render's addresses are datacenter addresses. YouTube often blocks them. The desk says so when it happens. Cookies help only when they are still valid; a residential proxy is the reliable fix when the IP itself is flagged.
+Render's addresses are datacenter addresses. YouTube often answers those with HTTP 429 and then "Sign in to confirm you're not a bot". The image runs a free PO token provider in the same container so yt-dlp can attach a proof-of-origin token. Cookies stay optional.
+
+The provider is [bgutil](https://github.com/Brainicism/bgutil-ytdlp-pot-provider) 2.0.2. Its HTTP server listens on `127.0.0.1:4416` only, starts with the container, and is restarted if it exits. The yt-dlp binary loads the matching plugin from `/opt/yt-dlp-plugins`. It tries the default player clients and then `mweb`, and it always asks the provider for a token (`fetch_pot=always`). `/api/health` includes `pot.ok` and `pot.version`. A cold start is about 340 MB: the web server about 100 MB, the provider about 190 MB, and the small supervisor. That fits the 512 MB plan and leaves room for one audio download. Keep one job at a time.
+
+A token does not replace cookies in every case. If a job still fails after `pot.ok` is true, export fresh cookies or set a residential proxy.
 
 ### Export cookies the way yt-dlp recommends
 
@@ -92,11 +96,11 @@ Cookies are a secret. Do not paste them into chat or commit them.
 
 A failed job may include a `detail` field with a short, sanitized yt-dlp excerpt (no cookie values). If it says cookies are "no longer valid" or "rotated", repeat the steps above.
 
-### If fresh cookies still fail
+### If a token and fresh cookies still fail
 
-Set `YTDLP_PROXY` to a **residential or ISP** proxy (`http://…`, `https://…`, or `socks5://…`) and redeploy. Another datacenter proxy usually fails the same way. A bgutil PO-token plugin can help with some formats on a clean IP; it does **not** unblock an IP YouTube has already flagged.
+Set `YTDLP_PROXY` to a **residential or ISP** proxy (`http://…`, `https://…`, or `socks5://…`) and redeploy. Another datacenter proxy usually fails the same way.
 
-The image pins yt-dlp nightly `2026.10.29.232701` (PyInstaller `yt-dlp_linux`, which bundles EJS). Node in the image is used as `--js-runtimes`. If every link starts failing again, update `YT_DLP_VERSION` and `YT_DLP_SHA256` in the Dockerfile from that release's `SHA2-256SUMS` and push.
+The image pins yt-dlp nightly `2026.10.29.232701` (PyInstaller `yt-dlp_linux`, which bundles EJS and loads the bgutil plugin from disk). Node in the image is used as `--js-runtimes` and to run the PO token server. If every link starts failing again, update `YT_DLP_VERSION` and `YT_DLP_SHA256` in the Dockerfile from that release's `SHA2-256SUMS` and push.
 
 ## 5. Day-to-day
 

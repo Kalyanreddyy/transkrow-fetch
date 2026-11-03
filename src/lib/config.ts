@@ -20,6 +20,8 @@ export type AppConfig = {
   ytDlpPath: string;
   ffmpegPath: string;
   ffprobePath: string;
+  pluginDir: string | null;
+  potProviderUrl: string | null;
   proxyUrl: string | null;
   cookiesPath: string | null;
   cookiesContent: string | null;
@@ -151,6 +153,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     ytDlpPath: env.YTDLP_PATH?.trim() || "yt-dlp",
     ffmpegPath: env.FFMPEG_PATH?.trim() || "ffmpeg",
     ffprobePath: env.FFPROBE_PATH?.trim() || "ffprobe",
+    pluginDir: env.YTDLP_PLUGIN_DIR?.trim() || null,
+    potProviderUrl: env.POT_PROVIDER_URL?.trim() || null,
     proxyUrl,
     cookiesPath,
     cookiesContent: cookiesContent && cookiesContent.trim() ? cookiesContent : null,
