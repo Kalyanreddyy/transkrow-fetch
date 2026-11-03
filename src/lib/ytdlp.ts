@@ -26,6 +26,10 @@ export type YtDlpArgInput = {
   cookiesPath?: string | null;
   proxyUrl?: string | null;
   jsRuntime?: string;
+  /** Writable cache for EJS / youtube-sigfuncs. Prefer DATA_DIR/yt-dlp-cache. */
+  cacheDir?: string | null;
+  /** When true, allow downloading EJS solver scripts from GitHub (pip installs). */
+  remoteEjs?: boolean;
 };
 
 /**
@@ -37,13 +41,14 @@ export function buildYtDlpArgs(input: YtDlpArgInput): string[] {
     ? "%(playlist_index)03d-%(title).60B-%(id)s.%(ext)s"
     : "%(title).80B-%(id)s.%(ext)s";
   const duration = Math.max(1, Math.floor(input.maxDurationSeconds));
+  // Keep warnings: yt-dlp reports rotated YouTube cookies as WARNING, and
+  // --no-warnings hid that from friendlyYtDlpError. EJS is bundled in the
+  // official linux binary; --remote-components is a fallback for other installs.
   const args = [
     "--ignore-config",
-    "--no-warnings",
     "--newline",
     "--restrict-filenames",
     "--no-mtime",
-    "--no-cache-dir",
     "--no-playlist-reverse",
     "--retries",
     "3",
@@ -64,6 +69,14 @@ export function buildYtDlpArgs(input: YtDlpArgInput): string[] {
     "-o",
     template,
   ];
+  if (input.cacheDir) {
+    args.push("--cache-dir", input.cacheDir);
+  } else {
+    args.push("--no-cache-dir");
+  }
+  if (input.remoteEjs !== false) {
+    args.push("--remote-components", "ejs:github");
+  }
 
   const ffmpegLocation = ffmpegLocationArg(input.ffmpegPath);
   if (ffmpegLocation) {
@@ -145,6 +158,23 @@ export function contentDisposition(name: string): string {
   return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`;
 }
 
+/** Drop cookie rows and other secrets before showing yt-dlp text in the API. */
+export function sanitizeYtDlpExcerpt(raw: string, maxChars = 700): string {
+  const lines = raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => {
+      if (!line) return false;
+      if (line.includes("\t")) return false;
+      if (line.includes("COOKIES_CONTENT")) return false;
+      if (/^[A-Za-z0-9_-]{40,}$/.test(line)) return false;
+      return true;
+    })
+    .map((line) => line.replace(/(?:\/|[A-Za-z]:\\)[\w./\\-]{3,}/g, "[path]"));
+  const kept = lines.filter((line) => !line.startsWith("[debug]")).slice(-8);
+  return kept.join("\n").slice(0, maxChars);
+}
+
 export function friendlyYtDlpError(raw: string): string {
   const lower = raw.toLowerCase();
   if (
@@ -161,6 +191,16 @@ export function friendlyYtDlpError(raw: string): string {
     lower.includes("this live event")
   ) {
     return "That video was skipped. Live streams, and anything longer than the duration cap, are not downloaded.";
+  }
+  if (
+    lower.includes("no longer valid") ||
+    lower.includes("rotated in the browser") ||
+    lower.includes("exporting-youtube-cookies")
+  ) {
+    return "The YouTube cookies in COOKIES_CONTENT are no longer valid (YouTube rotated them). Re-export from a fresh incognito session on youtube.com/robots.txt, then close that window before pasting. See DEPLOY.md.";
+  }
+  if (lower.includes("no video formats found") || lower.includes("requested format is not available")) {
+    return "YouTube returned no usable formats from this server. Fresh cookies or a residential proxy are usually required on a datacenter host. See DEPLOY.md.";
   }
   if (
     lower.includes("sign in to confirm") ||

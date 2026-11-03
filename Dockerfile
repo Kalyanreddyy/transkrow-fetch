@@ -26,12 +26,14 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Official PyInstaller build. It bundles the YouTube EJS challenge solver and
-# does not need a separate Python install. Checksum from the release SHA2-256SUMS.
-ARG YT_DLP_VERSION=2026.10.26
-ARG YT_DLP_SHA256=767ba9dce7052aa196f8b12652f433d76de128ba168966fa84b6394d5e6c6795
+# Official PyInstaller build. It bundles yt-dlp-ejs. Node from this image is
+# passed as --js-runtimes. Prefer a nightly newer than 2026.10.26 while YouTube
+# challenge solving is moving quickly; checksum from that release's SHA2-256SUMS.
+ARG YT_DLP_VERSION=2026.10.29.232701
+ARG YT_DLP_SHA256=d18dd9fb5671cec896b0bbbeabdfb2f9a5c043235e57296c29dc8747cede0e61
+ARG YT_DLP_BASE=https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download
 RUN curl -fsSL -o /usr/local/bin/yt-dlp \
-        "https://github.com/yt-dlp/yt-dlp/releases/download/${YT_DLP_VERSION}/yt-dlp_linux" \
+        "${YT_DLP_BASE}/${YT_DLP_VERSION}/yt-dlp_linux" \
     && echo "${YT_DLP_SHA256}  /usr/local/bin/yt-dlp" | sha256sum -c - \
     && chmod 755 /usr/local/bin/yt-dlp
 

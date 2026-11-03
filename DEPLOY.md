@@ -75,19 +75,28 @@ If the desk is empty after the site has been asleep, that is expected. Start the
 
 ## 4. When YouTube says the server is a bot
 
-Render's addresses are datacenter addresses. YouTube often blocks them. The desk says so when it happens.
+Render's addresses are datacenter addresses. YouTube often blocks them. The desk says so when it happens. Cookies help only when they are still valid; a residential proxy is the reliable fix when the IP itself is flagged.
 
-Try cookies first:
+### Export cookies the way yt-dlp recommends
 
-1. On a computer where you are signed into YouTube, export `youtube.com` cookies in Netscape `cookies.txt` format.
-2. In the Render service, add a secret variable `COOKIES_CONTENT` and paste the whole file.
-3. Save and redeploy, then try the same link.
+YouTube rotates account cookies while a normal YouTube tab stays open. Export from a throwaway session that you then close:
 
-Cookies are a secret. They can act as that YouTube login. Do not email them.
+1. Open a **new private/incognito** window. Sign into YouTube with a spare Google account (not your main one).
+2. In that same tab, open `https://www.youtube.com/robots.txt` (do not open other YouTube tabs).
+3. Use a cookies extension and export **only** `youtube.com` as Netscape `cookies.txt`. Do **not** choose "export all sites".
+4. **Close the private window** so the browser never rotates those cookies again.
+5. In Render → Environment, set secret `COOKIES_CONTENT` to the **entire file**. Keep the tab characters. If the dashboard turns tabs into spaces, yt-dlp will skip every row.
+6. Save (Render redeploys). Try one short public video.
 
-If cookies are not enough, set `YTDLP_PROXY` to a residential or ISP proxy and redeploy. Another datacenter proxy usually fails the same way.
+Cookies are a secret. Do not paste them into chat or commit them.
 
-The image pins yt-dlp `2026.10.26`. If every link starts failing, update `YT_DLP_VERSION` and `YT_DLP_SHA256` in the Dockerfile (the `yt-dlp_linux` line in that release's `SHA2-256SUMS`) and push. Render rebuilds the image.
+A failed job may include a `detail` field with a short, sanitized yt-dlp excerpt (no cookie values). If it says cookies are "no longer valid" or "rotated", repeat the steps above.
+
+### If fresh cookies still fail
+
+Set `YTDLP_PROXY` to a **residential or ISP** proxy (`http://…`, `https://…`, or `socks5://…`) and redeploy. Another datacenter proxy usually fails the same way. A bgutil PO-token plugin can help with some formats on a clean IP; it does **not** unblock an IP YouTube has already flagged.
+
+The image pins yt-dlp nightly `2026.10.29.232701` (PyInstaller `yt-dlp_linux`, which bundles EJS). Node in the image is used as `--js-runtimes`. If every link starts failing again, update `YT_DLP_VERSION` and `YT_DLP_SHA256` in the Dockerfile from that release's `SHA2-256SUMS` and push.
 
 ## 5. Day-to-day
 

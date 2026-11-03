@@ -18,6 +18,7 @@ function job(id: string, overrides: Partial<Job> = {}): Job {
     progress: 100,
     label: null,
     error: null,
+    detail: null,
     files: [],
     createdAt: "2026-01-01T00:00:00.000Z",
     finishedAt: "2026-01-01T00:10:00.000Z",

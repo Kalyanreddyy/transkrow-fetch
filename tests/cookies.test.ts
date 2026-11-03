@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { normalizeNetscapeCookies, writeNetscapeCookiesFile } from "../src/lib/cookies";
+import { inspectNetscapeCookies, normalizeNetscapeCookies, writeNetscapeCookiesFile } from "../src/lib/cookies";
 
 const pasted = [
   ".youtube.com\tTRUE\t/\tTRUE\t1893456000\tSID\tAAAA",
@@ -39,4 +39,15 @@ test("writes the cookies file with mode 0600 and does not echo the contents in t
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test("detects spaced-out cookie rows that yt-dlp will skip", () => {
+  const bad = normalizeNetscapeCookies(".youtube.com    TRUE    /    TRUE    1    SID    x\n");
+  const report = inspectNetscapeCookies(bad);
+  assert.equal(report.hasTabs, false);
+  assert.equal(report.looksSpaced, true);
+  const good = normalizeNetscapeCookies(".youtube.com\tTRUE\t/\tTRUE\t1\tSID\tx\n");
+  const ok = inspectNetscapeCookies(good);
+  assert.equal(ok.hasTabs, true);
+  assert.equal(ok.hasSessionCookie, true);
 });

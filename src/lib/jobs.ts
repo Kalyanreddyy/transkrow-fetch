@@ -13,6 +13,7 @@ import {
   contentTypeFor,
   friendlyYtDlpError,
   isDownloadableFileName,
+  sanitizeYtDlpExcerpt,
   type DownloadMode,
 } from "./ytdlp";
 
@@ -30,6 +31,8 @@ export type Job = {
   progress: number | null;
   label: string | null;
   error: string | null;
+  /** Sanitized yt-dlp stderr/stdout tail for signed-in debugging. Never includes cookie values. */
+  detail: string | null;
   files: JobFile[];
   createdAt: string;
   finishedAt: string | null;
@@ -281,6 +284,7 @@ export async function createJob(input: {
       progress: null,
       label: null,
       error: null,
+      detail: null,
       files: [],
       createdAt: now.toISOString(),
       finishedAt: null,
@@ -349,10 +353,12 @@ async function finishJob(jobId: string): Promise<void> {
   }
   const dir = jobDir(config, snapshot.id);
   let error: string | null = null;
+  let detail: string | null = null;
   let files: JobFile[] = [];
   let label: string | null = snapshot.label;
   try {
     await mkdir(dir, { recursive: true });
+    await mkdir(path.join(config.dataDir, "yt-dlp-cache"), { recursive: true });
     let lastWrite = 0;
     const args = buildYtDlpArgs({
       url: snapshot.url,
@@ -365,6 +371,8 @@ async function finishJob(jobId: string): Promise<void> {
       ffmpegPath: config.ffmpegPath,
       cookiesPath: resolvedCookiesPath(config),
       proxyUrl: config.proxyUrl,
+      cacheDir: path.join(config.dataDir, "yt-dlp-cache"),
+      remoteEjs: true,
     });
     const result = await runProcess(
       config.ytDlpPath,
@@ -410,6 +418,7 @@ async function finishJob(jobId: string): Promise<void> {
     );
     if (result.code !== 0) {
       error = friendlyYtDlpError(result.output);
+      detail = sanitizeYtDlpExcerpt(result.output) || null;
     } else {
       files = await collectMedia(dir);
       if (files.length === 0) {
@@ -434,7 +443,9 @@ async function finishJob(jobId: string): Promise<void> {
       }
     }
   } catch (caught) {
+    const message = caught instanceof Error ? caught.message : "The download failed.";
     error = caught instanceof Error ? friendlyYtDlpError(caught.message) : "The download failed.";
+    detail = sanitizeYtDlpExcerpt(message) || null;
   }
 
   if (error) {
@@ -450,6 +461,7 @@ async function finishJob(jobId: string): Promise<void> {
       const finished = new Date();
       current.status = error ? "failed" : "completed";
       current.error = error;
+      current.detail = error ? detail : null;
       current.files = files;
       current.label = label;
       current.progress = error ? null : 100;
