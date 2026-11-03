@@ -2,6 +2,7 @@ import { lookup } from "node:dns/promises";
 import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { writeNetscapeCookiesFile } from "./cookies";
 import type { AppConfig } from "./config";
 import { getConfig } from "./config";
 import { childEnv, runProcess } from "./process-runner";
@@ -227,8 +228,14 @@ async function writeCookiesFile(config: AppConfig): Promise<void> {
   if (!config.cookiesContent) {
     return;
   }
-  const destination = path.join(config.dataDir, "cookies.txt");
-  await writeFile(destination, config.cookiesContent, { mode: 0o600 });
+  const destination = await writeNetscapeCookiesFile(config.dataDir, config.cookiesContent);
+  if (!config.cookiesPath) {
+    config.cookiesPath = destination;
+  }
+  // Drop the pasted file from the process environment so later yt-dlp spawns
+  // do not inherit a secret that is large enough to fail process startup.
+  config.cookiesContent = null;
+  delete process.env.COOKIES_CONTENT;
 }
 
 function resolvedCookiesPath(config: AppConfig): string | null {

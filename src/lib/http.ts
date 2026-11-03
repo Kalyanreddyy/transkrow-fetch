@@ -21,10 +21,19 @@ export function publicOrigin(request: Request): string {
   return `${scheme}://${host}`;
 }
 
-export function isSameOrigin(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (!origin) {
+function secFetchSiteAllows(request: Request): boolean {
+  const site = request.headers.get("sec-fetch-site")?.split(",")[0]?.trim().toLowerCase();
+  if (!site) {
     return true;
+  }
+  return site === "same-origin" || site === "none";
+}
+
+export function isSameOrigin(request: Request): boolean {
+  const origin = request.headers.get("origin")?.trim();
+  // Referrer-Policy: no-referrer makes browsers send Origin: null on a form POST.
+  if (!origin || origin.toLowerCase() === "null") {
+    return secFetchSiteAllows(request);
   }
   let originHost: string;
   try {

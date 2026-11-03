@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import nextConfig from "../next.config";
 import { isSameOrigin } from "../src/lib/http";
 
 const ENV_KEYS = ["RENDER_EXTERNAL_HOSTNAME", "PUBLIC_URL", "RENDER_EXTERNAL_URL"] as const;
@@ -93,6 +94,61 @@ test("accepts the first x-forwarded-host when Host is internal", () => {
     });
     assert.equal(isSameOrigin(request), true);
   });
+});
+
+test("allows Origin null when the form post is same-origin", () => {
+  withEnv({}, () => {
+    assert.equal(
+      isSameOrigin(
+        loginRequest({
+          host: "srv-internal:10000",
+          origin: "null",
+          "sec-fetch-site": "same-origin",
+        }),
+      ),
+      true,
+    );
+    assert.equal(
+      isSameOrigin(loginRequest({ host: "srv-internal:10000", origin: "null", "sec-fetch-site": "none" })),
+      true,
+    );
+  });
+});
+
+test("rejects Origin null or a missing Origin for cross-site and same-site fetches", () => {
+  withEnv({}, () => {
+    for (const site of ["cross-site", "same-site"]) {
+      assert.equal(
+        isSameOrigin(loginRequest({ host: "srv-internal:10000", origin: "null", "sec-fetch-site": site })),
+        false,
+      );
+      assert.equal(
+        isSameOrigin(loginRequest({ host: "srv-internal:10000", "sec-fetch-site": site })),
+        false,
+      );
+    }
+  });
+});
+
+test("still rejects a foreign Origin when Sec-Fetch-Site says same-origin", () => {
+  withEnv({ RENDER_EXTERNAL_HOSTNAME: "transkrow-fetch.onrender.com" }, () => {
+    assert.equal(
+      isSameOrigin(
+        loginRequest({
+          host: "srv-internal:10000",
+          origin: "https://evil.example",
+          "sec-fetch-site": "same-origin",
+        }),
+      ),
+      false,
+    );
+  });
+});
+
+test("referrer policy keeps the origin on same-origin form posts", async () => {
+  const rules = await nextConfig.headers?.();
+  const policy = rules?.[0]?.headers.find((header) => header.key === "Referrer-Policy");
+  assert.equal(policy?.value, "strict-origin-when-cross-origin");
 });
 
 test("still blocks a foreign Origin when RENDER_EXTERNAL_HOSTNAME is set", () => {
