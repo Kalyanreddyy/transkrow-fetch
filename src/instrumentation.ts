@@ -9,7 +9,11 @@ export async function register() {
   }
   try {
     const { startBackgroundWork } = await import("./lib/jobs");
+    const { getConfig } = await import("./lib/config");
+    const { ensureEngineProbe } = await import("./lib/engine-probe");
     await startBackgroundWork();
+    const config = getConfig();
+    ensureEngineProbe(config.ytDlpPath, config.ffmpegPath);
   } catch (error) {
     console.error(error);
     if (process.env.NODE_ENV === "production") {

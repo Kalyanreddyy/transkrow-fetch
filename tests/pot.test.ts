@@ -4,7 +4,7 @@ import { engineReady, potHealthFromPing, probePotProvider } from "../src/lib/pot
 
 test("health ignores the PO provider when it is not configured", () => {
   const pot = potHealthFromPing(false, null, null);
-  assert.equal(engineReady("2026.10.29.232701", "ffmpeg version", pot), true);
+  assert.equal(engineReady({ ytDlp: true, ffmpeg: true }, pot), true);
   assert.equal(pot.enabled, false);
 });
 
@@ -13,8 +13,9 @@ test("health requires a live PO provider when one is configured", () => {
   const down = potHealthFromPing(true, null, null);
   assert.equal(up.ok, true);
   assert.equal(up.version, "2.0.2");
-  assert.equal(engineReady("2026.10.29.232701", "ffmpeg version", up), true);
-  assert.equal(engineReady("2026.10.29.232701", "ffmpeg version", down), false);
+  assert.equal(engineReady({ ytDlp: true, ffmpeg: true }, up), true);
+  assert.equal(engineReady({ ytDlp: true, ffmpeg: true }, down), false);
+  assert.equal(engineReady({ ytDlp: false, ffmpeg: true }, up), false);
   assert.equal(potHealthFromPing(true, 200, {}).ok, false);
 });
 

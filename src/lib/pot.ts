@@ -16,8 +16,8 @@ export function potHealthFromPing(
   return { enabled: true, ok: status === 200 && version !== null, version };
 }
 
-export function engineReady(ytDlp: string | null, ffmpeg: string | null, pot: PotHealth): boolean {
-  return Boolean(ytDlp && ffmpeg && (!pot.enabled || pot.ok));
+export function engineReady(binaries: { ytDlp: boolean; ffmpeg: boolean }, pot: PotHealth): boolean {
+  return Boolean(binaries.ytDlp && binaries.ffmpeg && (!pot.enabled || pot.ok));
 }
 
 export async function probePotProvider(baseUrl: string | null): Promise<PotHealth> {

@@ -69,7 +69,7 @@ export function Desk({
   const [formError, setFormError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [engineReady, setEngineReady] = useState<boolean | null>(null);
+  const [binariesMissing, setBinariesMissing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,8 +111,10 @@ export function Desk({
   useEffect(() => {
     void fetch("/api/health")
       .then((response) => response.json())
-      .then((body: { ready?: boolean }) => setEngineReady(body.ready === true))
-      .catch(() => setEngineReady(false));
+      .then((body: { binaries?: { ytDlp?: boolean; ffmpeg?: boolean } }) => {
+        setBinariesMissing(body.binaries?.ytDlp === false || body.binaries?.ffmpeg === false);
+      })
+      .catch(() => setBinariesMissing(false));
   }, []);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -169,7 +171,7 @@ export function Desk({
         save finishes. Anything left behind is removed within {deleteAfterMinutes} minutes.
       </p>
 
-      {engineReady === false ? (
+      {binariesMissing ? (
         <p role="alert" className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           yt-dlp or ffmpeg is missing on this server, so downloads will fail until the image is rebuilt.
         </p>

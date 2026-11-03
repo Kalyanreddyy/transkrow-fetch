@@ -1,4 +1,6 @@
 import { execFile, type ExecFileException } from "node:child_process";
+import { mkdirSync } from "node:fs";
+import path from "node:path";
 
 export type ProcessResult = { code: number; output: string };
 
@@ -8,6 +10,21 @@ export function childEnv(source: NodeJS.ProcessEnv = process.env): NodeJS.Proces
   const env: NodeJS.ProcessEnv = { ...source, PYTHONUNBUFFERED: "1" };
   for (const key of SECRET_ENV) {
     delete env[key];
+  }
+  // The onefile yt-dlp binary extracts itself into $TMPDIR on every launch and
+  // deletes that directory when it exits. A dedicated directory keeps those
+  // extracts from colliding with the rest of /tmp. It does not skip the extract.
+  if (!env.TMPDIR) {
+    const base = env.DATA_DIR?.trim();
+    if (base) {
+      const dir = path.join(base, "yt-dlp-runtime");
+      try {
+        mkdirSync(dir, { recursive: true });
+        env.TMPDIR = dir;
+      } catch (error) {
+        console.error(`could not create yt-dlp runtime directory: ${error instanceof Error ? error.message : "failed"}`);
+      }
+    }
   }
   return env;
 }

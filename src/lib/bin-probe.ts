@@ -18,16 +18,15 @@ export function sanitizeProbeText(raw: string): string {
 }
 
 export function probeFailureSummary(error: ProbeError, stdout: string, stderr: string): string {
-  const status =
-    typeof error.code === "number"
+  const status = error.killed
+    ? "timeout"
+    : typeof error.code === "number"
       ? `exit ${error.code}`
       : error.signal
         ? `signal ${error.signal}`
         : error.code
           ? String(error.code)
-          : error.killed
-            ? "killed"
-            : "failed";
+          : "failed";
   const detail = sanitizeProbeText(`${stderr ?? ""}\n${stdout ?? ""}`);
   return detail ? `${status}: ${detail}` : status;
 }
@@ -46,7 +45,7 @@ function firstTextLine(stdout: string, stderr: string): string | null {
  * binary fail at startup while a small program such as ffmpeg still runs.
  * The failure used to be discarded, so /api/health reported ytDlp: null.
  */
-export function probeBinary(bin: string, args: string[]): Promise<string | null> {
+export function probeBinary(bin: string, args: string[], timeoutMs = 8_000): Promise<string | null> {
   return new Promise((resolve) => {
     const finish = (error: ExecFileException | null, stdout = "", stderr = "") => {
       if (!error) {
@@ -70,7 +69,7 @@ export function probeBinary(bin: string, args: string[]): Promise<string | null>
       execFile(
         bin,
         args,
-        { timeout: 8000, shell: false, windowsHide: true, env: childEnv() },
+        { timeout: timeoutMs, shell: false, windowsHide: true, env: childEnv() },
         (error, stdout, stderr) => {
           finish(error, stdout ?? "", stderr ?? "");
         },

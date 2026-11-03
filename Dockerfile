@@ -41,7 +41,8 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
     FFMPEG_PATH=/usr/bin/ffmpeg \
     FFPROBE_PATH=/usr/bin/ffprobe \
     YTDLP_PLUGIN_DIR=/opt/yt-dlp-plugins \
-    POT_PROVIDER_URL=http://127.0.0.1:4416
+    POT_PROVIDER_URL=http://127.0.0.1:4416 \
+    TMPDIR=/tmp/transkrow/yt-dlp-runtime
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl ffmpeg \

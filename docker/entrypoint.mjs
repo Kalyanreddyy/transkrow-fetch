@@ -1,4 +1,14 @@
 import { spawn } from "node:child_process";
+import { mkdirSync } from "node:fs";
+
+// The PyInstaller yt-dlp binary unpacks into $TMPDIR on every run. Keep that
+// directory for the life of the container so extracts are not mixed with other
+// temporary files. The bootloader still creates a new _MEI folder per process.
+try {
+  mkdirSync(process.env.TMPDIR || "/tmp/transkrow/yt-dlp-runtime", { recursive: true });
+} catch (error) {
+  console.error(`could not create TMPDIR: ${error instanceof Error ? error.message : "failed"}`);
+}
 
 const node = process.execPath;
 const potScript = process.env.POT_SERVER_SCRIPT || "/opt/bgutil-provider/build/main.js";
