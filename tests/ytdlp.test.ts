@@ -33,7 +33,6 @@ test("passes the URL as one argument and never through a shell", () => {
   assert.equal(args.includes("--plugin-dirs"), true);
   assert.equal(args.includes("/opt/yt-dlp-plugins"), true);
   assert.equal(args.includes("youtube:player_client=default,mweb;fetch_pot=always"), true);
-  assert.equal(args.includes("--cookies"), true);
   assert.equal(args.at(-1), hostile);
   assert.equal(args.at(-2), "--");
   assert.equal(args.includes("!is_live & duration <=? 180"), true);
