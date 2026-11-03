@@ -26,11 +26,27 @@ export function isSameOrigin(request: Request): boolean {
   if (!origin) {
     return true;
   }
+  let originHost: string;
   try {
-    return new URL(origin).host === new URL(publicOrigin(request)).host;
+    originHost = new URL(origin).host.toLowerCase();
   } catch {
     return false;
   }
+  const allowed = new Set<string>();
+  const add = (h?: string | null) => {
+    const v = h?.split(",")[0]?.trim().toLowerCase();
+    if (v) allowed.add(v);
+  };
+  add(request.headers.get("x-forwarded-host"));
+  add(request.headers.get("host"));
+  add(process.env.RENDER_EXTERNAL_HOSTNAME);
+  for (const u of [process.env.PUBLIC_URL, process.env.RENDER_EXTERNAL_URL]) {
+    if (u) {
+      try { add(new URL(u).host); } catch { /* ignore */ }
+    }
+  }
+  try { add(new URL(publicOrigin(request)).host); } catch { /* ignore */ }
+  return allowed.has(originHost);
 }
 
 export function wantsJson(request: Request): boolean {
